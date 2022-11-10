@@ -359,3 +359,44 @@ class DjangoOAuthTest(TestCase):
         with mock.patch('requests.sessions.Session.request', fake_request):
             meta_data = client.load_server_metadata()
             self.assertEqual(mock_meta_data, meta_data)
+
+    def test_fetch_jwk_set_with_timeout_in_client_kwargs(self):
+        def fetch_token(request):
+            return {'access_token': 'dev', 'token_type': 'bearer'}
+
+        mock_meta_data = {
+            'jwks_uri': 'test'
+        }
+        mock_jwk_set = {
+            'foo': 'bar'
+        }
+        timeout = 10
+        client_kwargs = {
+            'timeout': timeout
+        }
+
+        oauth = OAuth()
+        client = oauth.register(
+            'dev',
+            client_id='dev',
+            client_secret='dev',
+            api_base_url='https://i.b/api',
+            access_token_url='https://i.b/token',
+            authorize_url='https://i.b/authorize',
+            fetch_token=fetch_token,
+            client_kwargs=client_kwargs,
+            server_metadata_url='https://i.b/metadata',
+        )
+
+        def fake_load_server_metadata():
+            return mock_meta_data
+
+        client.load_server_metadata = fake_load_server_metadata
+
+        def fake_request(sess, req, _, **kwargs):
+            self.assertEqual(kwargs['timeout'], timeout)
+            return mock_send_value(mock_jwk_set)
+
+        with mock.patch('requests.sessions.Session.request', fake_request):
+            jwk_set = client.fetch_jwk_set()
+            self.assertEqual(mock_jwk_set, jwk_set)
