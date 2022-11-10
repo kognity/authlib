@@ -16,7 +16,7 @@ class AsyncOpenIDMixin(object):
             raise RuntimeError('Missing "jwks_uri" in metadata')
 
         async with self.client_cls(**self.client_kwargs) as client:
-            resp = await client.request('GET', uri, withhold_token=True)
+            resp = await client.request('GET', uri, withhold_token=True, **self.client_kwargs)
             resp.raise_for_status()
             jwk_set = resp.json()
 
